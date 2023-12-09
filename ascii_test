@@ -1,1 +1,360 @@
 
+`timescale 1ns / 1ps
+// Reference book: "FPGA Prototyping by Verilog Examples"
+//                    "Xilinx Spartan-3 Version"
+// Authored by: Pong P. Chu
+// Published by: Wiley, 2008
+// Adapted for use on Basys 3 FPGA with Xilinx Artix-7
+// by: David J. Marion aka FPGA Dude
+
+module ascii_test(
+    input clk,
+    input video_on,
+    input [9:0] x, y,
+    input [3:0]input_number,
+ //   input [11:0] num_p1,num_p2,
+    input [1:0] ball,
+    input [1:0] strike,
+    input [2:0]button_cnt_p1,button_cnt_p2,
+    input hint_p1, hint_p2,
+    output [7:0] ascii_char_out,
+    output reg [11:0] rgb
+    );
+    
+    localparam WIDTH = 'd128, HEIGHT = 'd256;
+    wire [11:0] num_p1,num_p2;
+    // signal declarations
+    wire [11:0] rom_addr;           // 11-bit text ROM address
+    wire [7:0] ascii_char;          // 7-bit ASCII character code
+  
+    wire [3:0] char_row;            // 4-bit row of ASCII character
+    wire [2:0] bit_addr;            // column number of ROM data
+    wire [7:0] rom_data1;
+  
+    wire ascii_bit1;
+    wire [6:0]offset;
+    wire [6:0]num;
+    wire [7:0]state_out_d;
+     
+    reg [3:0]page;
+    wire vga_line;
+    reg [6:0]offset1,offset2,offset3;
+    reg [6:0] num1,num2,num3;
+    reg [6:0] input_num1,input_num2,input_num3;
+    reg [3:0]state;
+    reg [6:0]ascii_char_reg;
+    reg [23:0]p1_number0,p1_number1,p1_number2,p1_number3,p1_number4,
+              p2_number0,p2_number1,p2_number2,p2_number3,p2_number4;
+    reg [1:0] p1_ball0,p1_ball1,p1_ball2,p1_ball3,p1_ball4,
+              p2_ball0,p2_ball1,p2_ball2,p2_ball3,p2_ball4;
+    reg [1:0] p1_strike0,p1_strike1,p1_strike2,p1_strike3,p1_strike4
+             ,p2_strike0,p2_strike1,p2_strike2,p2_strike3,p2_strike4;
+             
+    localparam S0 = 4'b0000, S1 = 4'b0001, S2 = 4'b0010;
+        
+    assign ascii_char_out = ascii_char;
+     
+     
+     
+/*
+    always@* //is this right?... I made a combination circuit which stores guess number/...
+        case(button_cnt)
+        
+            'd3:begin p1_number0 =  guess_num_p1; p1_ball0 = ball; p1_strike0 = strike; end 
+            'd4:begin p2_number0 = guess_num_p2; p2_ball0 = ball; p2_strike0 = strike; end 
+            'd5:begin p1_number1 = guess_num_p1; p1_ball1 = ball; p1_strike1 = strike; end 
+            'd6:begin p2_number1 = guess_num_p2; p2_ball1 = ball; p2_strike1 = strike; end 
+            'd7:begin p1_number2 = guess_num_p1; p1_ball2 = ball; p1_strike2 = strike; end 
+            'd8:begin p2_number2 = guess_num_p2; p2_ball2 = ball; p2_strike2 = strike; end 
+            'd9:begin p1_number3 = guess_num_p1; p1_ball3 = ball; p1_strike3 = strike; end 
+            'd10:begin p2_number3 = guess_num_p2; p2_ball3 = ball; p2_strike3 = strike; end 
+            'd11:begin p1_number4 = guess_num_p1; p1_ball4 = ball; p1_strike4 = strike; end 
+            'd11:begin p2_number4 = guess_num_p2; p2_ball4 = ball; p2_strike4 = strike; end 
+            default:p1_number0 = p1_number0;
+        endcase
+    */
+    
+        
+    initial begin
+        state = S1;                         //state
+
+        end
+        
+             /*우리가 만들 야구게임의 화면은 여러 단계로 구성되어있다. 맨 처음 숫자를 입력하는칸이 나오는 단계, 숫자를 입력한 후 
+추측한 숫자를 입력하면 그 숫자와 볼,스트라이크 여부를 알려주는 단계, 승자표시 단계 등 계속 화면이 변해야 한다.
+그래서 state를 설정하여서 state가 특정 숫자 이상이면 특정 화면을 띄우기로 하였다.
+예를 들어 state1 이 추측단계라고 할 때, state >= 1 이면 맨 추측한 숫자를 띄우고 state >= 2 이면 그 다음추측한 숫자를 띄우는 방식이다.
+*/    
+    always@(posedge clk)
+        case(ascii_char)
+        //player 1 number
+        default: ascii_char_reg = 'h00; 
+        'h00: ascii_char_reg = 'h50;   //P
+        'h01: ascii_char_reg = 'h4c;   //L
+        'h02: ascii_char_reg = 'h41;   //A
+        'h03: ascii_char_reg = 'h59;   //Y
+        'h04: ascii_char_reg = 'h45;   //E
+        'h05: ascii_char_reg = 'h52;   //R
+        'h06: ascii_char_reg = 'h31;   //1
+        
+        'h07: ascii_char_reg = {4'b0011,num_p1[11:8]};   //E
+        'h08: ascii_char_reg = {4'b0011,num_p1[7:4]};  //R
+        'h09: ascii_char_reg = {4'b0011,num_p1[3:0]};
+        
+        'h0c: ascii_char_reg = {4'b0011,num_p2[11:8]};   //E
+        'h0d: ascii_char_reg = {4'b0011,num_p2[7:4]};  //R
+        'h0e: ascii_char_reg = {4'b0011,num_p2[3:0]};
+        
+        'h17: ascii_char_reg = 'h50;   //P
+        'h18: ascii_char_reg = 'h4c;   //L
+        'h19: ascii_char_reg = 'h41;   //A
+        'h1a: ascii_char_reg = 'h59;   //Y
+        'h1b: ascii_char_reg = 'h45;   //E
+        'h1c: ascii_char_reg = 'h52;   //R
+        'h1d: ascii_char_reg = 'h32;   //1
+        
+        
+        
+        'h20: ascii_char_reg = {4'b0011,input_number}; //player 1 first guess 
+        'h21: ascii_char_reg = {4'b0011,input_number};
+        'h22: ascii_char_reg = {4'b0011,input_number} ;       
+        
+        'h24: ascii_char_reg = (button_cnt_p1>=1)? {4'b0011,input_number}: 'h00;
+        'h25: ascii_char_reg = (button_cnt_p1>=1)? 'h42 : 'h00;                   //ball
+        'h26: ascii_char_reg = (button_cnt_p1>=1)? {4'b0011,input_number}: 'h00;
+        'h27: ascii_char_reg = (button_cnt_p1>=1)? 'h53 : 'h00;                    //strike
+        
+        'h37: ascii_char_reg = {4'b0011,input_number} ;//player 2 first guess 
+        'h38: ascii_char_reg = {4'b0011,input_number};
+        'h39: ascii_char_reg = {4'b0011,input_number};      
+
+        'h3b: ascii_char_reg = (button_cnt_p2>='d1)? {4'b0011,input_number}: 'h00;
+        'h3c: ascii_char_reg = (button_cnt_p2>='d1)? 'h42 : 'h00;                   //ball
+        'h3d: ascii_char_reg = (button_cnt_p2>='d1)? {4'b0011,input_number}: 'h00;
+        'h3e: ascii_char_reg = (button_cnt_p2>='d1)? 'h53 : 'h00;                   //strike    
+          
+        'h40: ascii_char_reg = {4'b0011,input_number}; //player 1 first guess 
+        'h41: ascii_char_reg = {4'b0011,input_number};
+        'h42: ascii_char_reg = {4'b0011,input_number} ;          
+        
+        'h44: ascii_char_reg = (button_cnt_p1>='d2)? {4'b0011,input_number}: 'h00;
+        'h45: ascii_char_reg = (button_cnt_p1>='d2)? 'h42 : 'h00;                   //ball
+        'h46: ascii_char_reg = (button_cnt_p1>='d2)? {4'b0011,input_number}: 'h00;
+        'h47: ascii_char_reg = (button_cnt_p1>='d2)? 'h53 : 'h00; 
+        
+        'h57: ascii_char_reg = {4'b0011,input_number};//player 2 first guess 
+        'h58: ascii_char_reg = {4'b0011,input_number};
+        'h59: ascii_char_reg = {4'b0011,input_number}; 
+        
+        'h5b: ascii_char_reg = (button_cnt_p2>='d2)? {4'b0011,input_number}: 'h00;
+        'h5c: ascii_char_reg = (button_cnt_p2>='d2)? 'h42 : 'h00;                   //ball
+        'h5d: ascii_char_reg = (button_cnt_p2>='d2)? {4'b0011,input_number}: 'h00;
+        'h5e: ascii_char_reg = (button_cnt_p2>='d2)? 'h53 : 'h00; 
+        
+        'h60: ascii_char_reg = {4'b0011,input_number}; //player 1 first guess 
+        'h61: ascii_char_reg = {4'b0011,input_number};
+        'h62: ascii_char_reg = {4'b0011,input_number} ;       
+        
+        'h64: ascii_char_reg = (button_cnt_p1>='d3)? {4'b0011,input_number}: 'h00;
+        'h65: ascii_char_reg = (button_cnt_p1>='d3)? 'h42 : 'h00;                   //ball
+        'h66: ascii_char_reg = (button_cnt_p1>='d3)? {4'b0011,input_number}: 'h00;
+        'h67: ascii_char_reg = (button_cnt_p1>='d3)? 'h53 : 'h00;                    //strike
+        
+        'h77: ascii_char_reg = {4'b0011,input_number} ;//player 2 first guess 
+        'h78: ascii_char_reg = {4'b0011,input_number};
+        'h79: ascii_char_reg = {4'b0011,input_number};      
+
+        'h7b: ascii_char_reg = (button_cnt_p2>='d3)? {4'b0011,input_number}: 'h00;
+        'h7c: ascii_char_reg = (button_cnt_p2>='d3)? 'h42 : 'h00;                   //ball
+        'h7d: ascii_char_reg = (button_cnt_p2>='d3)? {4'b0011,input_number}: 'h00;
+        'h7e: ascii_char_reg = (button_cnt_p2>='d3)? 'h53 : 'h00;                   //strike    
+          
+        'h80: ascii_char_reg = {4'b0011,input_number}; //player 1 first guess 
+        'h81: ascii_char_reg = {4'b0011,input_number};
+        'h82: ascii_char_reg = {4'b0011,input_number} ;          
+        
+        'h84: ascii_char_reg = (button_cnt_p1>='d4)? {4'b0011,input_number}: 'h00;
+        'h85: ascii_char_reg = (button_cnt_p1>='d4)? 'h42 : 'h00;                   //ball
+        'h86: ascii_char_reg = (button_cnt_p1>='d4)? {4'b0011,input_number}: 'h00;
+        'h87: ascii_char_reg = (button_cnt_p1>='d4)? 'h53 : 'h00; 
+        
+        'h97: ascii_char_reg = {4'b0011,input_number};//player 2 first guess 
+        'h98: ascii_char_reg = {4'b0011,input_number};
+        'h99: ascii_char_reg = {4'b0011,input_number}; 
+        
+        'h9b: ascii_char_reg = (button_cnt_p2>='d4)? {4'b0011,input_number}: 'h00;
+        'h9c: ascii_char_reg = (button_cnt_p2>='d4)? 'h42 : 'h00;                   //ball
+        'h9d: ascii_char_reg = (button_cnt_p2>='d4)? {4'b0011,input_number}: 'h00;
+        'h9e: ascii_char_reg = (button_cnt_p2>='d4)? 'h53 : 'h00;    
+        endcase  
+        
+        /*
+          'h29: if(state>=4'b0001) 
+                   ascii_char_reg <= 'h30;
+              else 
+                    ascii_char_reg <= ascii_char;
+        
+        'h30: if(state>=4'b0001) 
+                   ascii_char_reg <= num_p1[7:0];
+              else 
+                    ascii_char_reg <= ascii_char;
+                    
+         'h31: if(state>=4'b0001) 
+                   ascii_char_reg <=num_p1[15:8];
+              else 
+                    ascii_char_reg <=  ascii_char;
+                    
+         'h32: if(state>=4'b0001) 
+                   ascii_char_reg <= num_p1[23:16];
+              else 
+                    ascii_char_reg <= ascii_char;         
+        // player 2 number          
+        'h34: if(state>=4'b0001) 
+                   ascii_char_reg <= num_p2[7:0];
+              else 
+                    ascii_char_reg <= 'h00;
+         'h35: if(state>=4'b0000) 
+                   ascii_char_reg <= num_p2[15:8];
+              else 
+                    ascii_char_reg <= 'h00;
+                          
+         'h36: if(state>=4'b0001) 
+                   ascii_char_reg <=num_p2[23:16];
+              else 
+                    ascii_char_reg <=  ascii_char;
+           //player 1's guess number          
+         'h38: if(state>=4'b0001) 
+                   ascii_char_reg <= guess_num_p1[7:0];
+              else 
+                    ascii_char_reg <= ascii_char;         
+                 
+        'h39: if(state>=4'b0001) 
+                   ascii_char_reg <= guess_num_p1[15:8];
+              else 
+                    ascii_char_reg <= 'h00;
+         'h40: if(state>=4'b0000) 
+                   ascii_char_reg <= guess_num_p1[23:16];
+              else 
+                    ascii_char_reg <= 'h00;    
+          //player 2's guess number           
+                  
+                    
+         'h42: if(state>=4'b0001) 
+                   ascii_char_reg <= guess_num_p2[7:0];
+              else 
+                    ascii_char_reg <=  'h00;  
+                    
+         'h43: if(state>=4'b0001) 
+                   ascii_char_reg <= guess_num_p2[15:8];
+              else 
+                    ascii_char_reg <= 'h00;           
+                 
+        'h44: if(state>=4'b0001) 
+                   ascii_char_reg <= guess_num_p2[23:16];
+              else 
+                    ascii_char_reg <= 'h00;
+         ///////////////end of number 
+        'h45: if(state>=4'b0001) 
+                   ascii_char_reg <= 'h21;
+              else 
+                    ascii_char_reg <= 'h00;
+        
+          ////state check           
+                 
+        'h46: if(state>=4'b0001) 
+                   ascii_char_reg <= state_out_d;
+              else 
+                    ascii_char_reg <= 'h00;
+         
+         'h47: if(state>=4'b0001) 
+                   ascii_char_reg <= scancode[6:0];
+              else 
+                    ascii_char_reg <= 'h00;
+        
+        
+        
+        
+          default:
+                   ascii_char_reg <= ascii_char;
+                         
+          endcase
+     */
+
+/*오프셋과 num을  설정한 이유는 rom에서 그냥 불러오면 특정 위치에서 특정 문자와 숫자밖에 출력하지 못한다.
+ 이 코드는 x,y위치에 index를 대응시키고 그에 해당하는  문자와 숫자를 출력한다.
+  하지만 우리는 고정된 숫자를 출력하는 것이 아니다.
+그렇기에 offset을 설정하였다. 예를 들어 'h36이라는 x,y위치가 rom에 들어가면 6을 반환한다. 
+하지만 우리는 7을 출력하고 싶기에 offset6만큼 뺄셈을 해서 'h30으로 만든 후  num7을 더해 'h37위치로 강제로 주소를 바꿔주는 것이다. 
+*/
+
+    // instantiate ASCII ROM
+    ascii_rom rom1(.clk(clk), .addr(rom_addr),.scancode(scancode), .data(rom_data1),.offset(offset));
+    
+
+        
+    // ASCII ROM interface
+    wire a = 'h30;
+    assign rom_addr = {ascii_char_reg, char_row};   // ROM address is ascii code + row
+    assign ascii_bit1 = rom_data1[~bit_addr];     // reverse bit order
+
+        
+    assign ascii_char = {y[7:4], x[7:3]};   // 7-bit ascii code
+    assign char_row = y[3:0];               // row number of ascii character rom
+    assign bit_addr = x[2:0];               // column number of ascii character rom
+    // "on" region in center of screen
+    assign ascii_bit_on1 = ((x >= 1 && x < 640 ) && (y >= 1 && y < 480)) ? ascii_bit1: 1'b0;
+   
+    // rgb multiplexing circuit
+    always @*
+        if(~video_on)
+            rgb = 12'h000;      // blank
+        else
+            if(ascii_bit_on1)
+                rgb = 12'hF00;  // blue letters
+            else
+                rgb = 12'h000;  // white background
+   
+endmodule
+/*
+   always@(posedge clk)
+        case(ascii_char)
+        //player 1 number
+        default: ascii_char_reg = 'h00; 
+        'h00: ascii_char_reg <= 'h50;   //P
+        'h01: ascii_char_reg <= 'h4c;   //L
+        'h02: ascii_char_reg <= 'h41;   //A
+        'h03: ascii_char_reg <= 'h59;   //Y
+        'h04: ascii_char_reg <= 'h45;   //E
+        'h05: ascii_char_reg <= 'h52;   //R
+        'h06: ascii_char_reg <= 'h31;   //1
+        
+        'h09: ascii_char_reg <= 'h50;   //P
+        'h0a: ascii_char_reg <= 'h4c;   //L
+        'h0b: ascii_char_reg <= 'h41;   //A
+        'h0c: ascii_char_reg <= 'h59;   //Y
+        'h0d: ascii_char_reg <= 'h45;   //E
+        'h0e: ascii_char_reg <= 'h52;   //R
+        'h0f: ascii_char_reg <= 'h32;   //1
+        
+        
+        
+        'h10: ascii_char_reg <= p1_number0[7:0]&&(button_cnt>=3); //player 1 first guess 
+        'h11: ascii_char_reg <= p1_number0[15:7]&&(button_cnt>=3);
+        'h12: ascii_char_reg <= p1_number0[23:16]&&(button_cnt>=3);          
+        
+        'h13: ascii_char_reg <= ('h30 + p1_ball0)&&(button_cnt>=3);
+        'h14: ascii_char_reg <= 'h42&&(button_cnt>=3);                   //ball
+        'h15: ascii_char_reg <= ('h30 + p1_strike0)&&(button_cnt>=3);
+        'h16: ascii_char_reg <= 'h53&&(button_cnt>=3);                   //strike
+        
+        'h17: ascii_char_reg <= p2_number0[7:0]&&(button_cnt>=4);  //player 2 first guess 
+        'h18: ascii_char_reg <= p2_number0[15:7]&&(button_cnt>=4);
+        'h19: ascii_char_reg <= p2_number0[23:16]&&(button_cnt>=4);        
+
+        'h1c: ascii_char_reg <= ('h30 + p2_ball0)&&(button_cnt>=4);
+        'h1d: ascii_char_reg <= 'h42&&(button_cnt>=4);                   //ball
+        'h1e: ascii_char_reg <= ('h30 + p2_strike0)&&(button_cnt>=4);
+        'h1f: ascii_char_reg <= 'h53&&(button_cnt>=4);                   //strike      
+        
+        
+        endcase  */
