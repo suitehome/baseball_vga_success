@@ -1,0 +1,77 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 2023/12/09 09:43:33
+// Design Name: 
+// Module Name: strike_ball
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module strike_ball(
+        input clk,
+        input guess_mode,
+        input [11:0]num_p1, num_p2,guess_num_p1,
+        output [1:0]strike1,strike2,ball1,ball2
+    );
+    
+ wire [3:0]a,b,c;
+ wire [3:0]x,y,z;
+ wire [3:0]p,q,r;
+ assign a  = guess_num_p1[11:8];
+ assign b = guess_num_p1[7:4] ;
+ assign c = guess_num_p1[3:0];
+ assign x = num_p1[3:0];
+ assign y = num_p1[7:4];
+ assign z =  num_p1[11:8];
+ assign p = num_p2[3:0];
+ assign q = num_p2[7:4];
+ assign r =  num_p2[11:8];
+ wire [11:0]n1 = num_p1;
+  wire [11:0]n2 = num_p2;
+   wire [11:0]g1 = guess_num_p1;
+ integer i,j;
+
+
+
+ /*assign strike1 = (a==p &&  b== q && c == r)?2'b11 : 
+ (a==p &&  b== q)||(b== q &&c == r)||(c == r&&a==p)?2'b10 : 
+ a==p||b==q||c==r ? 2'b01 : 2'b00;
+    */
+                        
+    wire [1:0]strike1_calc = 1*(guess_num_p1[3:0] == num_p2[3:0])  + 
+    1*(guess_num_p1[7:4] == num_p2[7:4]) + 1*(guess_num_p1[11:8] == num_p2[11:8]);
+    
+    wire [1:0] ball1_calc = 1*(guess_num_p1[3:0] == num_p2[7:4]) + 1*(guess_num_p1[3:0] == num_p2[11:8]) 
+                    + 1*(guess_num_p1[7:4] == num_p2[3:0]) + 1*(guess_num_p1[7:4] == num_p2[11:8]) +
+                    1*(guess_num_p1[11:8] == num_p2[3:0]) + 1*(guess_num_p1[11:8] == num_p2[7:4]);
+                    
+    wire [1:0]strike2_calc = 1*(guess_num_p1[3:0] == num_p1[3:0])  + 
+    1*(guess_num_p1[7:4] == num_p1[7:4]) +1*(guess_num_p1[11:8] == num_p1[11:8]);
+    
+    wire [1:0] ball2_calc = 1*(guess_num_p1[3:0] == num_p1[7:4]) + 1*(guess_num_p1[3:0] == num_p1[11:8]) 
+                    + 1*(guess_num_p1[7:4] == num_p1[3:0]) + 1*(guess_num_p1[7:4] == num_p1[11:8]) +
+                    1*(guess_num_p1[11:8] == num_p1[3:0]) + 1*(guess_num_p1[11:8] == num_p1[7:4]);
+    
+     //I first set the a:b  as a : 0 but the output was only 1bit, so I changed the 0 as 2'b00 how does
+     //it work then??
+   assign strike1 = guess_mode? strike1_calc:2'b00; 
+    assign ball1 = guess_mode? ball1_calc:2'b00;
+   assign strike2 = guess_mode? strike2_calc:2'b00; 
+    assign ball2 = guess_mode? ball2_calc:2'b00;
+   
+   // assign strike2 = guess_mode?strike2_calc:2'b00; 
+  //  assign ball2 = guess_mode?ball2_calc:2'b00;
+endmodule
