@@ -1,0 +1,296 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 2023/12/05 15:46:01
+// Design Name: 
+// Module Name: datapath
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module datapath(
+                  input wire clk,
+                  input wire rst,
+                  input wire [2:0]input_sig,
+                  input wire guess_mode,
+                  input wire [4:0] button_cnt,
+                  input wire [11:0] input_number,
+                  input wire [7:0]ascii_char,
+                  input wire button_released_p1,button_released_p2,
+                  
+                  output wire [1:0]success,
+                  
+                  output reg  [3:0] output_number,
+                  output reg [11:0]num_p1,num_p2,  
+                  
+
+                  output wire [1:0]strike,
+                  output  wire [1:0] ball,
+                  output wire hint_p1,hint_p2
+                  
+                  
+    );
+reg cnt;
+reg [11:0]guess_p1_array0,guess_p1_array1,guess_p1_array2,guess_p1_array3,guess_array4,guess_array5,guess_array6,guess_array7,
+            guess_array8,guess_array9;
+reg [11:0]guess_p2_array0,guess_p2_array1,guess_p2_array2,guess_p2_array3 ;          
+reg [1:0] strike_p1_0, strike_p1_1, strike_p1_2, strike_p1_3;
+reg [1:0] ball_p1_0, ball_p1_1, ball_p1_2, ball_p1_3;
+
+reg [1:0] strike_p2_0,strike_p2_1,strike_p2_2,strike_p2_3;
+reg [1:0] ball_p2_0,ball_p2_1,ball_p2_2,ball_p2_3;
+
+reg [11:0] guess_array[0:9];
+wire [1:0] strike1, strike2, ball1, ball2;
+assign strike = strike1;
+assign ball = ball1;
+assign hint_p1 = num_p1 % 'd2; 
+assign hint_p2 = num_p2 % 'd2; 
+
+
+
+
+
+            always@(posedge clk, posedge rst) 
+            if(rst)begin
+               num_p1 = 0;
+               num_p2 = 0;
+               end 
+            else if(input_sig == 'd1 && guess_mode == 0)
+                num_p1 = input_number;
+            else if(input_sig == 'd2 && guess_mode == 0)
+                num_p2 = input_number;   
+                
+           always@(posedge clk,posedge rst) //계속 latch is generated but i exchanged this with clk and it was removed 
+                if(rst) begin 
+                     guess_p1_array0 <= 0;
+                     strike_p1_0 <= 0;
+                     ball_p1_0<=0;
+                     
+                     guess_p1_array1 <= 0;
+                     strike_p1_1 <= 0;
+                     ball_p1_1<=0;
+                     
+                     guess_p1_array2 <= 0;
+                     strike_p1_2 <= 0;
+                     ball_p1_2<=0;
+                     
+                     guess_p1_array3 <= 0;
+                     strike_p1_3 <= 0;
+                     ball_p1_3<=0;
+                     end 
+                else if(button_released_p1) begin 
+                     guess_p1_array0 <= input_number;
+                     strike_p1_0 <= strike1;
+                     ball_p1_0 <= ball1;
+                     
+                     guess_p1_array1 <= guess_p1_array0;
+                     strike_p1_1 <= strike_p1_0;
+                     ball_p1_1 <= ball_p1_0;
+                     
+                     guess_p1_array2 <= guess_p1_array1;
+                     strike_p1_2 <= strike_p1_1;
+                     ball_p1_2 <= ball_p1_1;
+                     
+                     guess_p1_array3 <= guess_p1_array2;
+                     strike_p1_3 <= strike_p1_2;
+                     ball_p1_3 <= ball_p1_2;
+                     guess_array[4][11:0] <= input_number;
+                     guess_array[5][11:0] <= input_number;
+                     guess_array[6][11:0] <= input_number;
+                     guess_array[7][11:0] <= input_number;
+                     guess_array[8][11:0] <= input_number;
+                     guess_array[9][11:0] <= input_number;  
+                           end      
+           always@(posedge clk,posedge rst) //계속 latch is generated but i exchanged this with clk and it was removed 
+                if(rst) begin 
+                     guess_p2_array0 <= 0;
+                     strike_p2_0 <= 0;
+                     ball_p2_0<=0;
+                     
+                     guess_p2_array1 <= 0;
+                     strike_p2_1 <= 0;
+                     ball_p2_1<=0;
+                     
+                     guess_p2_array2 <= 0;
+                     strike_p2_2 <= 0;
+                     ball_p2_2<=0;
+                     
+                     guess_p2_array3 <= 0;
+                     strike_p2_3 <= 0;
+                     ball_p2_3<=0;
+                     end 
+                else if(button_released_p2) begin 
+                     guess_p2_array0 <= input_number;
+                     strike_p2_0 <= strike2;
+                     ball_p2_0 <= ball2;
+                     
+                     guess_p2_array1 <= guess_p2_array0;
+                     strike_p2_1 <= strike_p2_0;
+                     ball_p2_1 <= ball_p2_0;
+                     
+                     guess_p2_array2 <= guess_p2_array1;
+                     strike_p2_2 <= strike_p2_1;
+                     ball_p2_2 <= ball_p2_1;
+                     
+                     guess_p2_array3 <= guess_p2_array2;
+                     strike_p2_3 <= strike_p2_2;
+                     ball_p2_3 <= ball_p2_2;
+                     //guess_array[4][11:0] <= input_number;
+                    // guess_array[5][11:0] <= input_number;
+                    // guess_array[6][11:0] <= input_number;
+                    // guess_array[7][11:0] <= input_number;
+                    // guess_array[8][11:0] <= input_number;
+                    // guess_array[9][11:0] <= input_number;  
+                           end      
+               
+                    
+
+                
+           /*
+           always@*
+            case(button_cnt)
+                default : guess_array0 = input_number;
+                'd2: guess_array1 = input_number;
+                'd3: guess_array[2][11:0] = input_number;
+                'd4: guess_array[3][11:0] = input_number;
+                'd5: guess_array[4][11:0] = input_number;
+                'd6: guess_array[5][11:0] = input_number;
+                'd7: guess_array[6][11:0] = input_number;
+                'd8: guess_array[7][11:0] = input_number;
+                'd9: guess_array[8][11:0] = input_number;
+                'd10: guess_array[9][11:0] = input_number;
+            endcase
+            */
+        strike_ball b1(.guess_mode(guess_mode),.num_p1(num_p1), .num_p2(num_p2),.guess_num_p1(input_number),
+        .strike1(strike1),.strike2(strike2),.ball1(ball1),.ball2(ball2));
+      
+           always@*
+            case(ascii_char)
+                'h20: output_number = guess_p1_array0[11:8];    //number p1
+                'h21: output_number = guess_p1_array0[7:4];
+                'h22: output_number = guess_p1_array0[3:0];
+                 
+                'h24: output_number = {2'b00,ball_p1_0};                             //ball and strike 
+                'h26: output_number = {2'b00,strike_p1_0};
+                
+                'h37: output_number = guess_p2_array0[11:8];        //number p2
+                'h38: output_number = guess_p2_array0[7:4];
+                'h39: output_number = guess_p2_array0[3:0];
+                
+                'h3b: output_number = {2'b00,ball_p2_0};                             //ball and strike 
+                'h3d: output_number = {2'b00,strike_p2_0};
+                
+                'h40: output_number = guess_p1_array1[11:8];
+                'h41: output_number = guess_p1_array1[7:4];
+                'h42: output_number = guess_p1_array1[3:0];
+                 
+                'h44: output_number = {2'b00,ball_p1_1};
+                'h46: output_number = {2'b00,strike_p1_1};
+                
+                'h57: output_number = guess_p2_array1[11:8];
+                'h58: output_number = guess_p2_array1[7:4];
+                'h59: output_number = guess_p2_array1[3:0];
+                
+                'h5b: output_number = {2'b00,ball_p2_1};                             //ball and strike 
+                'h5d: output_number = {2'b00,strike_p2_1};
+                
+                'h60: output_number = guess_p1_array2[11:8];
+                'h61: output_number = guess_p1_array2[7:4];
+                'h62: output_number = guess_p1_array2[3:0];
+                 
+                'h64: output_number = {2'b00,ball_p1_2};
+                'h66: output_number = {2'b00,strike_p1_2};
+                
+                'h77: output_number = guess_p2_array2[11:8];
+                'h78: output_number = guess_p2_array2[7:4];
+                'h79: output_number = guess_p2_array2[3:0];
+                
+                'h7b: output_number = {2'b00,ball_p2_2};                             //ball and strike 
+                'h7d: output_number = {2'b00,strike_p2_2};
+                
+                'h80: output_number = guess_p1_array3[11:8];
+                'h81: output_number = guess_p1_array3[7:4];
+                'h82: output_number = guess_p1_array3[3:0];
+                 
+                'h84: output_number = {2'b00,ball_p1_3};
+                'h86: output_number = {2'b00,strike_p1_3};
+                
+                'h97: output_number = guess_p2_array3[11:8];
+                'h98: output_number = guess_p2_array3[7:4];
+                'h99: output_number = guess_p2_array3[3:0];
+                
+                'h9b: output_number = {2'b00,ball_p2_3};                             //ball and strike 
+                'h9d: output_number = {2'b00,strike_p2_3};
+                default:  output_number = 4'b0000;
+             endcase
+             
+             
+             
+       /*
+    always@(input_sig, input_number) 
+        case(input_sig)
+            3'b001: begin 
+                if(guess_mode == 0)
+                    num_p1[23:0] = input_number[23:0]; 
+                 else 
+                    guess_num_p1[23:0] = input_number[23:0];
+                 end
+            3'b010: begin
+                 if(guess_mode == 0)
+                    num_p2[23:0] = input_number[23:0];
+                 else 
+                    guess_num_p2[23:0] = input_number[23:0];
+                end 
+            default: cnt = 0;
+        endcase
+        */
+   assign  success = guess_mode? ( 2*(num_p1 == guess_array[1][11:0]) + (num_p2 == guess_array[0][11:0]) ) : 0;
+   
+   /* ball and strike 
+    assign strike1 = guess_mode?((guess_num_p1[7:0] == num_p2[7:0])  + 
+    (guess_num_p1[15:8] == num_p2[15:8]) +(guess_num_p1[23:16] == num_p2[23:16])):0; 
+    assign ball1 = guess_mode?((guess_num_p1[7:0] == num_p2[15:8]) + (guess_num_p1[7:0] == num_p2[23:16]) 
+                    + (guess_num_p1[15:8] == num_p2[7:0]) + (guess_num_p1[15:8] == num_p2[23:16]) +
+                    (guess_num_p1[23:16] == num_p2[7:0]) + (guess_num_p1[23:16] == num_p2[15:8])):0;
+   
+   
+    assign strike2 = guess_mode?((guess_num_p2[7:0] == num_p1[7:0])  + 
+    (guess_num_p2[15:8] == num_p1[15:8]) +(guess_num_p2[23:16] == num_p1[23:16])):0; 
+    assign ball2 = guess_mode?((guess_num_p2[7:0] == num_p1[15:8]) + (guess_num_p2[7:0] == num_p1[23:16]) 
+                    + (guess_num_p2[15:8] == num_p1[7:0]) + (guess_num_p2[15:8] == num_p1[23:16]) +
+                    (guess_num_p2[23:16] == num_p1[7:0]) + (guess_num_p2[23:16] == num_p1[15:8])):0;
+    */
+    /*
+    reg [3:0]check_cnt_reg;
+    assign check_cnt = check_cnt_reg;
+    //check when 3number + enter is stored
+    assign check = input_number[7:0]=='h0d && ~(input_number[15:8] == 'h0d) 
+                   && ~(input_number[23:16] == 'h0d) && ~(input_number[31:24] == 'h0d);
+                   
+    assign output_number = input_number[31:8];   //transmit 3 number without enter key
+    
+    always@(posedge check, posedge rst )    //check count 
+        if(rst)
+             check_cnt_reg  = 0; 
+        else if(cycle == 1)
+            check_cnt_reg = check_cnt_reg-2;
+           
+        else 
+            check_cnt_reg = check_cnt_reg +1;
+            */ 
+    
+  
+endmodule
